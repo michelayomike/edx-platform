@@ -125,6 +125,8 @@ def get_programs(site=None, uuid=None, uuids=None, course=None, organization=Non
             uuids = cache.get(SITE_PROGRAM_UUIDS_CACHE_KEY_TPL.format(domain=site.domain), [])
             if not uuids:
                 logger.warning(u'Failed to get program UUIDs from the cache for site {}.'.format(site.domain))
+        else:
+            uuids = []
     elif organization:
         uuids = get_programs_for_organization(organization)
         if not uuids:
