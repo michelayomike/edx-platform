@@ -189,19 +189,3 @@ def get_resume_block(block):
         if resume_block:
             return resume_block
     return block
-
-
-def get_first_purchase_offer_banner_fragment(user, course):
-    if user and course and can_receive_discount(user=user, course=course):
-        # Translator: xgettext:no-python-format
-        offer_message = _(u'{banner_open}{percentage}% off your first upgrade.{span_close}'
-                          u' Discount automatically applied.{div_close}')
-        return Fragment(HTML(offer_message).format(
-            banner_open=HTML(
-                '<div class="first-purchase-offer-banner"><span class="first-purchase-offer-banner-bold">'
-            ),
-            percentage=discount_percentage(),
-            span_close=HTML('</span>'),
-            div_close=HTML('</div>')
-        ))
-    return None
