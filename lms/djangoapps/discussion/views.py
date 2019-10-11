@@ -127,10 +127,9 @@ def get_threads(request, course, user_info, discussion_id=None, per_page=THREADS
         # Use the discussion id/commentable id to determine the context we are going to pass through to the backend.
         if team_api.get_team_by_discussion(discussion_id) is not None:
             default_query_params['context'] = ThreadContext.STANDALONE
-
-        # if the discussion_id should not be visible to the team member, raise 403 error.
+        
         if not _is_discussion_visible_to_team_user(request, course, discussion_id):
-            return HttpResponseForbidden(TEAM_PERMISSION_MESSAGE)
+            raise HttpResponseForbidden(TEAM_PERMISSION_MESSAGE)
 
     if not request.GET.get('sort_key'):
         # If the user did not select a sort key, use their last used sort key
@@ -229,9 +228,6 @@ def inline_discussion(request, course_key, discussion_id):
         group_names_by_id = get_group_names_by_id(course_discussion_settings)
         course_is_divided = course_discussion_settings.division_scheme is not CourseDiscussionSettings.NONE
 
-    if not _is_discussion_visible_to_team_user(request, course, discussion_id):
-        return HttpResponseForbidden(TEAM_PERMISSION_MESSAGE)
-
     with function_trace('prepare_content'):
         threads = [
             utils.prepare_content(
@@ -309,9 +305,6 @@ def single_thread(request, course_key, discussion_id, thread_id):
     """
     course = get_course_with_access(request.user, 'load', course_key, check_if_enrolled=True)
     request.user.is_community_ta = utils.is_user_community_ta(request.user, course.id)
-    
-    if not _is_discussion_visible_to_team_user(request, course, discussion_id):
-        return HttpResponseForbidden(TEAM_PERMISSION_MESSAGE)
     
     if request.is_ajax():
         cc_user = cc.User.from_django_user(request.user)
@@ -984,4 +977,4 @@ def _is_discussion_visible_to_team_user(request, course, discussion_id):
     if the user is on a team, which has the discussion set to private.
     """
     user_is_course_staff = has_access(request.user, "staff", course)
-    return team_api.discussion_visibile_by_user(discussion_id, request.user) or user_is_course_staff:
+    return user_is_course_staff or team_api.discussion_visibile_by_user(discussion_id, request.user)
