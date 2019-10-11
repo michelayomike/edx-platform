@@ -183,20 +183,6 @@
             this.showed = false;
         },
 
-        handleRequestError: function(request) {
-            if (request.status === 403 && request.responseText) {
-                DiscussionUtil.discussionAlert(
-                    gettext('Warning'),
-                    request.responseText
-                );
-            } else {
-                DiscussionUtil.discussionAlert(
-                    gettext('Error'),
-                    gettext('This discussion could not be loaded. Refresh the page and try again.')
-                );
-            }
-        },
-
         toggleDiscussion: function() {
             var self = this;
             if (this.showed) {
@@ -208,9 +194,21 @@
                     this.$('section.discussion').removeClass('is-hidden');
                     this.showed = true;
                 } else {
-                    this.loadDiscussions(this.$el, function(request){
-                        self.hideDiscussion();
-                        self.handleRequestError(request);
+                    this.loadDiscussions(this.$el, function(request) {
+                        if (request.status === 403 && request.responseText) {
+                            DiscussionUtil.discussionAlert(
+                                gettext('Warning'),
+                                request.responseText
+                            );
+                            self.$el.text(request.responseText);
+                            self.showed = true;
+                        } else {
+                            self.hideDiscussion();
+                            DiscussionUtil.discussionAlert(
+                                gettext('Error'),
+                                gettext('This discussion could not be loaded. Refresh the page and try again.')
+                            );
+                        }
                     });
                 }
             }
