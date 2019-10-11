@@ -176,9 +176,29 @@
             this.threadListView.$('.is-active').focus();
         },
 
+        hideDiscussion: function() {
+            this.$('section.discussion').addClass('is-hidden');
+            this.toggleDiscussionBtn.removeClass('shown');
+            this.toggleDiscussionBtn.find('.button-text').text(gettext('Show Discussion'));
+            this.showed = false;
+        },
+
+        handleRequestError: function(request) {
+            if (request.status === 403 && request.responseText) {
+                DiscussionUtil.discussionAlert(
+                    gettext('Warning'),
+                    request.responseText
+                );
+            } else {
+                DiscussionUtil.discussionAlert(
+                    gettext('Error'),
+                    gettext('This discussion could not be loaded. Refresh the page and try again.')
+                );
+            }
+        },
+
         toggleDiscussion: function() {
             var self = this;
-
             if (this.showed) {
                 this.hideDiscussion();
             } else {
@@ -188,23 +208,13 @@
                     this.$('section.discussion').removeClass('is-hidden');
                     this.showed = true;
                 } else {
-                    this.loadDiscussions(this.$el, function() {
+                    this.loadDiscussions(this.$el, function(request){
                         self.hideDiscussion();
-                        DiscussionUtil.discussionAlert(
-                            gettext('Error'),
-                            gettext('This discussion could not be loaded. Refresh the page and try again.')
-                        );
+                        self.handleRequestError(request);
                     });
                 }
             }
             this.toggleDiscussionBtn.focus();
-        },
-
-        hideDiscussion: function() {
-            this.$('section.discussion').addClass('is-hidden');
-            this.toggleDiscussionBtn.removeClass('shown');
-            this.toggleDiscussionBtn.find('.button-text').text(gettext('Show Discussion'));
-            this.showed = false;
         },
 
         toggleNewPost: function(event) {

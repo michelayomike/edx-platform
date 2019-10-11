@@ -32,7 +32,7 @@ from lms.djangoapps.courseware.courses import get_course_with_access
 from lms.djangoapps.courseware.views.views import CourseTabView
 from lms.djangoapps.discussion.django_comment_client.base.views import track_thread_viewed_event
 from lms.djangoapps.discussion.django_comment_client.constants import TYPE_ENTRY
-from lms.djangoapps.discussion.django_comment_client.permissions import get_team, has_permission
+from lms.djangoapps.discussion.django_comment_client.permissions import has_permission
 from lms.djangoapps.discussion.django_comment_client.utils import (
     add_courseware_context,
     available_division_schemes,
@@ -45,7 +45,7 @@ from lms.djangoapps.discussion.django_comment_client.utils import (
     strip_none
 )
 from lms.djangoapps.experiments.utils import get_experiment_user_metadata_context
-from lms.djangoapps.teams.models import CourseTeam
+from lms.djangoapps.teams import api as team_api
 from openedx.core.djangoapps.django_comment_common.models import CourseDiscussionSettings
 from openedx.core.djangoapps.django_comment_common.utils import (
     ThreadContext,
@@ -125,8 +125,12 @@ def get_threads(request, course, user_info, discussion_id=None, per_page=THREADS
     if discussion_id is not None:
         default_query_params['commentable_id'] = discussion_id
         # Use the discussion id/commentable id to determine the context we are going to pass through to the backend.
-        if get_team(discussion_id) is not None:
+        if team_api.get_team_by_discussion(discussion_id) is not None:
             default_query_params['context'] = ThreadContext.STANDALONE
+
+        # if the discussion_id should not be visible to the team member, raise 403 error.
+        if not _is_discussion_visible_to_team_user(request, course, discussion_id):
+            return HttpResponseForbidden(TEAM_PERMISSION_MESSAGE)
 
     if not request.GET.get('sort_key'):
         # If the user did not select a sort key, use their last used sort key
@@ -225,7 +229,7 @@ def inline_discussion(request, course_key, discussion_id):
         group_names_by_id = get_group_names_by_id(course_discussion_settings)
         course_is_divided = course_discussion_settings.division_scheme is not CourseDiscussionSettings.NONE
 
-    if not _is_on_team_if_applicable(request.user, course, discussion_id):
+    if not _is_discussion_visible_to_team_user(request, course, discussion_id):
         return HttpResponseForbidden(TEAM_PERMISSION_MESSAGE)
 
     with function_trace('prepare_content'):
@@ -305,6 +309,10 @@ def single_thread(request, course_key, discussion_id, thread_id):
     """
     course = get_course_with_access(request.user, 'load', course_key, check_if_enrolled=True)
     request.user.is_community_ta = utils.is_user_community_ta(request.user, course.id)
+    
+    if not _is_discussion_visible_to_team_user(request, course, discussion_id):
+        return HttpResponseForbidden(TEAM_PERMISSION_MESSAGE)
+    
     if request.is_ajax():
         cc_user = cc.User.from_django_user(request.user)
         user_info = cc_user.to_dict()
@@ -970,14 +978,10 @@ def get_divided_discussions(course, discussion_settings):
     return divided_course_wide_discussions, divided_inline_discussions
 
 
-def _is_on_team_if_applicable(user, course, discussion_id):
+def _is_discussion_visible_to_team_user(request, course, discussion_id):
     """
-    Return whether (a) the user is on the appropriate team, OR
-                   (b) this is not a team discussion.
+    Helper function to check if the discussion is visible to the user,
+    if the user is on a team, which has the discussion set to private.
     """
-    try:
-        team = CourseTeam.objects.get(discussion_topic_id=discussion_id)
-    except CourseTeam.DoesNotExist:
-        return True
-    is_team_member = team.users.filter(id=user.id).exists()
-    return is_team_member or has_access(user, "staff", course)
+    user_is_course_staff = has_access(request.user, "staff", course)
+    return team_api.discussion_visibile_by_user(discussion_id, request.user) or user_is_course_staff:
