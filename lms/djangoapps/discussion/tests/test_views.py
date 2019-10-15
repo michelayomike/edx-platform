@@ -10,7 +10,7 @@ from datetime import datetime
 import ddt
 import pytest
 import six
-from django.http import Http404
+from django.http import Http404, HttpResponseForbidden
 from django.test.client import Client, RequestFactory
 from django.test.utils import override_settings
 from django.urls import reverse
@@ -653,6 +653,22 @@ class SingleThreadAccessTestCase(CohortedTestCase):
             thread_group_id=self.student_cohort.id
         )
         self.assertEqual(resp.status_code, 200)
+
+    def test_private_team_thread(self, mock_request):
+        self.team = CourseTeamFactory.create(discussion_topic_id='dummy_discussion_id')
+        self.user_not_in_team = UserFactory.create()
+        CourseEnrollmentFactory(user=self.user_not_in_team, course_id=self.course.id)
+
+        with patch('lms.djangoapps.teams.api.is_team_discussion_private', autospect=True) as mocked:
+            mocked.return_value = True
+            response = self.call_view(
+                mock_request,
+                'non_cohorted_topic',
+                self.user_not_in_team,
+                None
+            )
+            self.assertEqual(403, response.status_code)
+            self.assertEqual(views.TEAM_PERMISSION_MESSAGE, response.content)
 
 
 @patch('openedx.core.djangoapps.django_comment_common.comment_client.utils.requests.request', autospec=True)

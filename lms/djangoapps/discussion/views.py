@@ -44,7 +44,7 @@ from lms.djangoapps.discussion.django_comment_client.utils import (
     is_commentable_divided,
     strip_none
 )
-from lms.djangoapps.discussion.exceptions import UserNotPermittedException
+from lms.djangoapps.discussion.exceptions import DiscussionHiddenFromUserException
 from lms.djangoapps.experiments.utils import get_experiment_user_metadata_context
 from lms.djangoapps.teams import api as team_api
 from openedx.core.djangoapps.django_comment_common.models import CourseDiscussionSettings
@@ -130,7 +130,7 @@ def get_threads(request, course, user_info, discussion_id=None, per_page=THREADS
             default_query_params['context'] = ThreadContext.STANDALONE
         
         if not _is_discussion_visible_to_team_user(request, course, discussion_id):
-            raise UserNotPermittedException()
+            raise DiscussionHiddenFromUserException()
 
     if not request.GET.get('sort_key'):
         # If the user did not select a sort key, use their last used sort key
@@ -219,7 +219,7 @@ def inline_discussion(request, course_key, discussion_id):
             )
     except ValueError:
         return HttpResponseServerError('Invalid group_id')
-    except UserNotPermittedException:
+    except DiscussionHiddenFromUserException:
         return HttpResponseForbidden(TEAM_PERMISSION_MESSAGE)
 
     with function_trace('get_metadata_for_threads'):
@@ -275,7 +275,7 @@ def forum_form_discussion(request, course_key):
             return HttpResponseServerError('Forum is in maintenance mode', status=status.HTTP_503_SERVICE_UNAVAILABLE)
         except ValueError:
             return HttpResponseServerError("Invalid group_id")
-        except UserNotPermittedException:
+        except DiscussionHiddenFromUserException:
             return HttpResponseForbidden(TEAM_PERMISSION_MESSAGE)
 
         with function_trace("get_metadata_for_threads"):
@@ -317,6 +317,7 @@ def single_thread(request, course_key, discussion_id, thread_id):
         is_staff = has_permission(request.user, 'openclose_thread', course.id)
         if not _is_discussion_visible_to_team_user(request, course, discussion_id):
             return HttpResponseForbidden(TEAM_PERMISSION_MESSAGE)
+
         thread = _load_thread_for_viewing(
             request,
             course,
@@ -474,7 +475,8 @@ def _create_discussion_board_context(request, base_context, thread=None):
     cc_user = cc.User.from_django_user(user)
     user_info = context['user_info']
     if thread:
-
+        if not _is_discussion_visible_to_team_user(request, course, discussion_id):
+            raise DiscussionHiddenFromUserException()
         # Since we're in page render mode, and the discussions UI will request the thread list itself,
         # we need only return the thread information for this one.
         threads = [thread.to_dict()]
@@ -773,8 +775,15 @@ class DiscussionBoardFragmentView(EdxFragmentView):
             fragment = Fragment(html)
             self.add_fragment_resource_urls(fragment)
             return fragment
-        except PermissionError:
-            return HttpResponseForbidden(TEAM_PERMISSION_MESSAGE)
+        except DiscussionHiddenFromUserException:
+            log.warning('The user is viewing private discussion')
+            html = render_to_string('discussion/discussion_private_fragment.html', {
+                'disable_courseware_js': True,
+                'uses_pattern_library': True,
+            })
+            fragment = Fragment(html)
+            self.add_fragment_resource_urls(fragment)
+            return fragment
 
     def vendor_js_dependencies(self):
         """
