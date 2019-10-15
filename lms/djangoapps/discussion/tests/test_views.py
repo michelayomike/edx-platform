@@ -912,6 +912,7 @@ class InlineDiscussionContextTestCase(ForumsEnableMixin, ModuleStoreTestCase):
         )
 
         self.team.add_user(self.user)
+        self.user_not_in_team = UserFactory.create()
 
     def test_context_can_be_standalone(self, mock_request):
         mock_request.side_effect = make_mock_request_impl(
@@ -931,6 +932,23 @@ class InlineDiscussionContextTestCase(ForumsEnableMixin, ModuleStoreTestCase):
 
         json_response = json.loads(response.content.decode('utf-8'))
         self.assertEqual(json_response['discussion_data'][0]['context'], ThreadContext.STANDALONE)
+
+    def test_private_team_discussion(self, mock_request):
+        # First set the team discussion to be private
+        CourseEnrollmentFactory(user=self.user_not_in_team, course_id=self.course.id)
+
+        request = RequestFactory().get("dummy_url")
+        request.user = self.user_not_in_team
+
+        with patch('lms.djangoapps.teams.api.is_team_discussion_private', autospect=True) as mocked:
+            mocked.return_value = True
+            response = views.inline_discussion(
+                request,
+                six.text_type(self.course.id),
+                self.discussion_topic_id,
+            )
+            self.assertEqual(response.status_code, 403)
+            self.assertEqual(response.content.decode('utf-8'), views.TEAM_PERMISSION_MESSAGE)
 
 
 @patch('openedx.core.djangoapps.django_comment_common.comment_client.utils.requests.request', autospec=True)

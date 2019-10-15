@@ -44,6 +44,7 @@ from lms.djangoapps.discussion.django_comment_client.utils import (
     is_commentable_divided,
     strip_none
 )
+from lms.djangoapps.discussion.exceptions import UserNotPermittedException
 from lms.djangoapps.experiments.utils import get_experiment_user_metadata_context
 from lms.djangoapps.teams import api as team_api
 from openedx.core.djangoapps.django_comment_common.models import CourseDiscussionSettings
@@ -129,7 +130,7 @@ def get_threads(request, course, user_info, discussion_id=None, per_page=THREADS
             default_query_params['context'] = ThreadContext.STANDALONE
         
         if not _is_discussion_visible_to_team_user(request, course, discussion_id):
-            raise HttpResponseForbidden(TEAM_PERMISSION_MESSAGE)
+            raise UserNotPermittedException()
 
     if not request.GET.get('sort_key'):
         # If the user did not select a sort key, use their last used sort key
@@ -218,6 +219,8 @@ def inline_discussion(request, course_key, discussion_id):
             )
     except ValueError:
         return HttpResponseServerError('Invalid group_id')
+    except UserNotPermittedException:
+        return HttpResponseForbidden(TEAM_PERMISSION_MESSAGE)
 
     with function_trace('get_metadata_for_threads'):
         annotated_content_info = utils.get_metadata_for_threads(course_key, threads, request.user, user_info)
@@ -272,6 +275,8 @@ def forum_form_discussion(request, course_key):
             return HttpResponseServerError('Forum is in maintenance mode', status=status.HTTP_503_SERVICE_UNAVAILABLE)
         except ValueError:
             return HttpResponseServerError("Invalid group_id")
+        except UserNotPermittedException:
+            return HttpResponseForbidden(TEAM_PERMISSION_MESSAGE)
 
         with function_trace("get_metadata_for_threads"):
             annotated_content_info = utils.get_metadata_for_threads(course_key, threads, request.user, user_info)
@@ -310,6 +315,8 @@ def single_thread(request, course_key, discussion_id, thread_id):
         cc_user = cc.User.from_django_user(request.user)
         user_info = cc_user.to_dict()
         is_staff = has_permission(request.user, 'openclose_thread', course.id)
+        if not _is_discussion_visible_to_team_user(request, course, discussion_id):
+            return HttpResponseForbidden(TEAM_PERMISSION_MESSAGE)
         thread = _load_thread_for_viewing(
             request,
             course,
@@ -766,6 +773,8 @@ class DiscussionBoardFragmentView(EdxFragmentView):
             fragment = Fragment(html)
             self.add_fragment_resource_urls(fragment)
             return fragment
+        except PermissionError:
+            return HttpResponseForbidden(TEAM_PERMISSION_MESSAGE)
 
     def vendor_js_dependencies(self):
         """
