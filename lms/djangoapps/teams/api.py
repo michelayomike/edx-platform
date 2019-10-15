@@ -1,3 +1,8 @@
+"""
+The Python API other app should use to work with Teams feature
+"""
+from __future__ import absolute_import
+
 from lms.djangoapps.teams.models import CourseTeam
 
 
@@ -23,7 +28,7 @@ def is_team_discussion_private(team, discussion_id):
     """
     if team:
         # check visibility setting on the team
-        return True
+        return False
     else:
         return False
 
