@@ -275,8 +275,6 @@ def forum_form_discussion(request, course_key):
             return HttpResponseServerError('Forum is in maintenance mode', status=status.HTTP_503_SERVICE_UNAVAILABLE)
         except ValueError:
             return HttpResponseServerError("Invalid group_id")
-        except DiscussionHiddenFromUserException:
-            return HttpResponseForbidden(TEAM_PERMISSION_MESSAGE)
 
         with function_trace("get_metadata_for_threads"):
             annotated_content_info = utils.get_metadata_for_threads(course_key, threads, request.user, user_info)
