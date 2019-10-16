@@ -95,7 +95,9 @@ function() {
                 height: height,
                 width: data.containerWidth,
                 top: 0.5 * (data.containerHeight - height),
-                left: 0
+                left: 0,
+                minWidth: 200,
+                minHeight: 200
             });
 
             return module;
@@ -109,7 +111,9 @@ function() {
                 height: data.containerHeight,
                 width: data.containerHeight * data.elementRatio,
                 top: 0,
-                left: 0.5 * (data.containerWidth - width)
+                left: 0.5 * (data.containerWidth - width),
+                minWidth: 200,
+                minHeight: 200
             });
 
             return module;
