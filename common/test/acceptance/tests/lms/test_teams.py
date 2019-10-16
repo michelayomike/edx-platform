@@ -31,7 +31,7 @@ from common.test.acceptance.pages.lms.teams import (
     TeamsPage
 )
 from common.test.acceptance.tests.helpers import EventsTestMixin, UniqueCourseTest, get_modal_alert
-from openedx.core.lib import teams_config
+from openedx.core.lib.teams_config import TeamsConfig
 from openedx.core.lib.tests import attr
 
 TOPICS_PER_PAGE = 12

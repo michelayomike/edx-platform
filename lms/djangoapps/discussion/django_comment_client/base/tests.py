@@ -1442,9 +1442,11 @@ class TeamsPermissionsTestCase(ForumsEnableMixin, UrlResetMixin, SharedModuleSto
         # pylint: disable=super-method-not-called
         with super(TeamsPermissionsTestCase, cls).setUpClassAndTestData():
             teams_configuration = teams_config.TeamsEnabledWithTopics(
-                topics=teams_config.Cluster(
-                    "topic_id", name="Solar Power", description="Solar power is hot"
-                )
+                topics=[
+                    teams_config.Cluster(
+                        "topic_id", name="Solar Power", description="Solar power is hot"
+                    )
+                ]
             )
             cls.course = CourseFactory.create(teams_configuration=teams_configuration)
 
