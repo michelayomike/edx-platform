@@ -128,7 +128,7 @@ def get_threads(request, course, user_info, discussion_id=None, per_page=THREADS
         # Use the discussion id/commentable id to determine the context we are going to pass through to the backend.
         if team_api.get_team_by_discussion(discussion_id) is not None:
             default_query_params['context'] = ThreadContext.STANDALONE
-        
+
         if not _is_discussion_visible_to_team_user(request, course, discussion_id):
             raise DiscussionHiddenFromUserException()
 
@@ -308,7 +308,7 @@ def single_thread(request, course_key, discussion_id, thread_id):
     """
     course = get_course_with_access(request.user, 'load', course_key, check_if_enrolled=True)
     request.user.is_community_ta = utils.is_user_community_ta(request.user, course.id)
-    
+
     if request.is_ajax():
         cc_user = cc.User.from_django_user(request.user)
         user_info = cc_user.to_dict()
@@ -774,7 +774,10 @@ class DiscussionBoardFragmentView(EdxFragmentView):
             self.add_fragment_resource_urls(fragment)
             return fragment
         except DiscussionHiddenFromUserException:
-            log.warning('The user is viewing private discussion')
+            log.warning(
+                'User with id={user_id} tried to view a private discussion',
+                user_id=request.user.id
+            )
             html = render_to_string('discussion/discussion_private_fragment.html', {
                 'disable_courseware_js': True,
                 'uses_pattern_library': True,
@@ -993,4 +996,4 @@ def _is_discussion_visible_to_team_user(request, course, discussion_id):
     if the user is on a team, which has the discussion set to private.
     """
     user_is_course_staff = has_access(request.user, "staff", course)
-    return user_is_course_staff or team_api.discussion_visibile_by_user(discussion_id, request.user)
+    return user_is_course_staff or team_api.discussion_visible_by_user(discussion_id, request.user)

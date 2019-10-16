@@ -19,7 +19,7 @@ def get_team_by_discussion(discussion_id):
         return None
 
 
-def is_team_discussion_private(team, discussion_id):
+def is_team_discussion_private(team):
     """
     This is the function to check if the team is configured to have its discussion
     to be private. We need a way to check the setting on the team.
@@ -43,7 +43,7 @@ def user_is_a_team_member(user, team):
     return False
 
 
-def discussion_visibile_by_user(discussion_id, user):
+def discussion_visible_by_user(discussion_id, user):
     """
     This function checks whether the discussion should be visible to the user.
     The discussion should not be visible to the user if
@@ -52,4 +52,4 @@ def discussion_visibile_by_user(discussion_id, user):
     * The user is not part of the team
     """
     team = get_team_by_discussion(discussion_id)
-    return not is_team_discussion_private(team, discussion_id) or user_is_a_team_member(user, team)
+    return not is_team_discussion_private(team) or user_is_a_team_member(user, team)

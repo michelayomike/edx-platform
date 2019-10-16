@@ -22,7 +22,8 @@ COURSE_KEY2 = CourseKey.from_string('edx/history/2')
 
 DISCUSSION_TOPIC_ID = uuid4().hex
 
-class APITests(SharedModuleStoreTestCase):
+
+class PythonAPITests(SharedModuleStoreTestCase):
     """
     The set of tests for different API endpoints
     """
@@ -58,27 +59,24 @@ class APITests(SharedModuleStoreTestCase):
 
     @unittest.skip("This functionality is not yet implemented")
     def test_is_team_discussion_private_is_private(self):
-        self.assertTrue(teams_api.is_team_discussion_private(self.team1, DISCUSSION_TOPIC_ID))
+        self.assertTrue(teams_api.is_team_discussion_private(self.team1))
 
-    def test_is_team_discussion_private_discussion_non_exist(self):
-        self.assertFalse(teams_api.is_team_discussion_private(self.team2, 'DO_NOT_EXISTS'))
 
     def test_is_team_discussion_private_is_public(self):
-        self.assertFalse(teams_api.is_team_discussion_private(None, DISCUSSION_TOPIC_ID))
-        self.assertFalse(teams_api.is_team_discussion_private(self.team2, self.team2.discussion_topic_id))
+        self.assertFalse(teams_api.is_team_discussion_private(None))
+        self.assertFalse(teams_api.is_team_discussion_private(self.team2))
 
     def test_user_is_a_team_member(self):
         self.assertTrue(teams_api.user_is_a_team_member(self.user1, self.team1))
         self.assertFalse(teams_api.user_is_a_team_member(self.user1, None))
         self.assertFalse(teams_api.user_is_a_team_member(self.user1, self.team2))
 
-    def test_private_discussion_visibile_by_user(self):
-        self.assertTrue(teams_api.discussion_visibile_by_user(DISCUSSION_TOPIC_ID, self.user1))
-        self.assertTrue(teams_api.discussion_visibile_by_user(DISCUSSION_TOPIC_ID, self.user2))
-        # self.assertFalse(teams_api.discussion_visibile_by_user(DISCUSSION_TOPIC_ID, self.user3))
-    
-    def test_public_discussion_visibile_by_user(self):
-        self.assertTrue(teams_api.discussion_visibile_by_user(self.team2.discussion_topic_id, self.user1))
-        self.assertTrue(teams_api.discussion_visibile_by_user(self.team2.discussion_topic_id, self.user2))
-        self.assertTrue(teams_api.discussion_visibile_by_user('DO_NOT_EXISTS', self.user3))
+    def test_private_discussion_visible_by_user(self):
+        self.assertTrue(teams_api.discussion_visible_by_user(DISCUSSION_TOPIC_ID, self.user1))
+        self.assertTrue(teams_api.discussion_visible_by_user(DISCUSSION_TOPIC_ID, self.user2))
+        # self.assertFalse(teams_api.discussion_visible_by_user(DISCUSSION_TOPIC_ID, self.user3))
 
+    def test_public_discussion_visible_by_user(self):
+        self.assertTrue(teams_api.discussion_visible_by_user(self.team2.discussion_topic_id, self.user1))
+        self.assertTrue(teams_api.discussion_visible_by_user(self.team2.discussion_topic_id, self.user2))
+        self.assertTrue(teams_api.discussion_visible_by_user('DO_NOT_EXISTS', self.user3))
