@@ -54,6 +54,11 @@ define([
                     errorMessage
                 );
             expect(view.$el.text().trim().replace(/"/g, '')).toEqual(errorMessage);
+            expect($('.discussion-alert-wrapper p')
+                .text()
+                .trim()
+                .replace(/"/g, '')
+            ).toEqual(errorMessage);
         });
     });
 });
