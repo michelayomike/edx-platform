@@ -95,6 +95,14 @@ from ..models import ReportStore
 from ..tasks_helper.utils import UPDATE_STATUS_FAILED, UPDATE_STATUS_SUCCEEDED
 
 
+_TEAMS_CONFIG = teams_config.TeamsEnabledWithTopics(
+    max_team_size=2,
+    topics=[
+        teams_config.Cluster(topic="topic-id", "name": "Topic", "description": "A Topic"),
+    ],
+)
+
+
 class InstructorGradeReportTestCase(TestReportMixin, InstructorTaskCourseTestCase):
     """ Base class for grade report tests. """
 
@@ -402,9 +410,7 @@ class TestInstructorGradeReport(InstructorGradeReportTestCase):
             course = CourseFactory.create(
                 cohort_config={'cohorted': True, 'auto_cohort': True, 'auto_cohort_groups': ['cohort 1', 'cohort 2']},
                 user_partitions=[experiment_partition],
-                teams_configuration={
-                    'max_size': 2, 'topics': [{'topic-id': 'topic', 'name': 'Topic', 'description': 'A Topic'}]
-                },
+                teams_configuration=_TEAMS_CONFIG,
             )
         _ = CreditCourseFactory(course_key=course.id)
 
@@ -450,9 +456,7 @@ class TestTeamGradeReport(InstructorGradeReportTestCase):
 
     def setUp(self):
         super(TestTeamGradeReport, self).setUp()
-        self.course = CourseFactory.create(teams_configuration={
-            'max_size': 2, 'topics': [{'topic-id': 'topic', 'name': 'Topic', 'description': 'A Topic'}]
-        })
+        self.course = CourseFactory.create(teams_configuration=_TEAMS_CONFIG)
         self.student1 = UserFactory.create()
         CourseEnrollment.enroll(self.student1, self.course.id)
         self.student2 = UserFactory.create()
@@ -1524,9 +1528,7 @@ class TestTeamStudentReport(TestReportMixin, InstructorTaskCourseTestCase):
 
     def setUp(self):
         super(TestTeamStudentReport, self).setUp()
-        self.course = CourseFactory.create(teams_configuration={
-            'max_size': 2, 'topics': [{'topic-id': 'topic', 'name': 'Topic', 'description': 'A Topic'}]
-        })
+        self.course = CourseFactory.create(teams_configuration=_TEAMS_CONFIG)
         self.student1 = UserFactory.create()
         CourseEnrollment.enroll(self.student1, self.course.id)
         self.student2 = UserFactory.create()
